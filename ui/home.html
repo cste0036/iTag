@@ -1,0 +1,259 @@
+<!-- credit to: https://codepen.io/flkt-crnpio/details/WxROwy -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Home Page</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
+</head>
+
+<body>
+    <button class="made-with" onclick="signOut()">SIGN OUT</button>
+
+    <h1>
+        Welcome to<br> FIT5225 Assignment 2<br> Home Page
+    </h1>
+
+    <div class="tabs">
+        <div class="tab-2">
+            <label for="tab2-1">Upload Image</label>
+            <input id="tab2-1" name="tabs-two" type="radio" checked="checked">
+            <div>
+                <span>
+                    <h4>Image Upload</h4>
+                    <p>Users can upload their image here</p>
+                    <button onclick="location.href='http://localhost:5500/upload-image.html'" type="button">
+                            click me</button>
+                </span>
+            </div>
+        </div>
+        <div class="tab-2">
+            <label for="tab2-2">Queries</label>
+            <input id="tab2-2" name="tabs-two" type="radio">
+            <div>
+                <span>
+                    <h4>Find images based on the tags</h4>
+                    <p>User can search the database by tags which will return images that matches the searched tag.</p>
+                    <button onclick="location.href='http://localhost:5500/find-by-tags.html'" type="button">
+                        click me</button>
+                    
+                </span>
+                <hr>
+                <span>
+                    <h4>Find images based on the tags of an image</h4>
+                    <p>User can upload an image that will be processed and tagged. It will then return all
+                        images in the database that matches the uploaded image's tag.
+                    </p>
+                    <button onclick="location.href='http://localhost:5500/find-by-image.html'" type="button">
+                        click me</button>
+                </span>
+                <hr>
+                <span>
+                    <h4>Manual addition or removal of tags</h4>
+                    <p>User can add or remove tags to a specific image by using the s3-url.</p>
+                    <button onclick="location.href='http://localhost:5500/edit-tags.html'" type="button">click me</button>
+                </span>
+                <hr>
+                <span>
+                    <h4>Delete an image</h4>
+                    <p>User can delete an image from the server by providing a specific s3-url.</p>
+                    <button onclick="location.href='http://localhost:5500/delete-image.html'" type="button">click me</button>
+                </span>
+                    <hr>
+                <span>
+                    <h4>Get Image</h4>
+                    <p>To render an image from a s3_url</p>
+                    <button onclick="location.href='http://localhost:5500/get-image.html'" type="button">
+                            click me</button>
+                </span>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    // redirect to login page if unauthenticated 
+    if ((sessionStorage.getItem("idToken") == "undefined")) {
+        location.href = "http://localhost:5500/sign-up.html";
+        alert("Please login or sign up to proceed further");
+    }
+
+    // getting id token
+    if (!sessionStorage.getItem("idToken")) {
+        const hashObj = window.location.hash.replace('#', '').split('&').reduce((prev, item) => {
+            return Object.assign({
+                [item.split('=')[0]]: item.split('=')[1]
+            }, prev);
+        }, {});
+        if (hashObj.error) {
+            console.log("Unable to hash url")
+                // sessionStorage.setItem("idToken", "false");
+                // idToken=null;
+        }
+        idToken = hashObj.id_token;
+        console.log("idToken: " + idToken);
+        sessionStorage.setItem("idToken", idToken);
+    }
+
+    // sign out
+    const signOut = () => {
+        sessionStorage.removeItem("idToken");
+        window.location.replace("http://localhost:5500/sign-up.html")
+            // sessionStorage.setItem("idToken", "false");
+        window.reload();
+    }
+
+    // redirect to login page if unauthenticated 
+    if ((sessionStorage.getItem("idToken") == "undefined")) {
+        location.href = "http://localhost:5500/sign-up.html";
+        alert("Please login or sign up to proceed further");
+    }
+</script>
+
+<style>
+    body {
+        /* background: #efedef; */
+        color: #191828;
+        font-family: "Roboto", Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        font-weight: 300;
+        letter-spacing: 0.01em;
+        line-height: 1.6em;
+        margin: 0;
+        padding: 100px;
+    }
+    
+    h1 {
+        font-size: 40px;
+        line-height: 0.8em;
+        color: rgba(10, 7, 7, 0.2);
+    }
+    
+    .made-with {
+        background: #fd264f;
+        color: #fff;
+        display: block;
+        font-size: 20px;
+        line-height: 1em;
+        margin: 0;
+        padding: 10px 220px;
+        position: fixed;
+        top: 70px;
+        right: -165px;
+        text-align: center;
+        text-decoration: none;
+        transform: rotate(45deg);
+    }
+    
+    .made-with:hover {
+        cursor: pointer;
+    }
+    
+    .documentation {
+        color: #fd264f;
+    }
+    
+    button:focus,
+    input:focus,
+    textarea:focus,
+    select:focus {
+        outline: none;
+    }
+    
+    .tabs {
+        display: block;
+        display: -webkit-flex;
+        display: -moz-flex;
+        display: flex;
+        -webkit-flex-wrap: wrap;
+        -moz-flex-wrap: wrap;
+        flex-wrap: wrap;
+        margin: 0;
+        overflow: hidden;
+    }
+    
+    .tabs [class^="tab"] label,
+    .tabs [class*=" tab"] label {
+        color: #fd264f;
+        cursor: pointer;
+        display: block;
+        font-size: 1.1em;
+        font-weight: 300;
+        line-height: 1em;
+        padding: 2rem 0;
+        text-align: center;
+    }
+    
+    .tabs [class^="tab"] [type="radio"],
+    .tabs [class*=" tab"] [type="radio"] {
+        border-bottom: 1px solid rgba(14, 10, 14, 0.5);
+        cursor: pointer;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        display: block;
+        width: 100%;
+        -webkit-transition: all 0.3s ease-in-out;
+        -moz-transition: all 0.3s ease-in-out;
+        -o-transition: all 0.3s ease-in-out;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    .tabs [class^="tab"] [type="radio"]:hover,
+    .tabs [class^="tab"] [type="radio"]:focus,
+    .tabs [class*=" tab"] [type="radio"]:hover,
+    .tabs [class*=" tab"] [type="radio"]:focus {
+        border-bottom: 1px solid #fd264f;
+    }
+    
+    .tabs [class^="tab"] [type="radio"]:checked,
+    .tabs [class*=" tab"] [type="radio"]:checked {
+        border-bottom: 2px solid #fd264f;
+    }
+    
+    .tabs [class^="tab"] [type="radio"]:checked+div,
+    .tabs [class*=" tab"] [type="radio"]:checked+div {
+        opacity: 1;
+    }
+    
+    .tabs [class^="tab"] [type="radio"]+div,
+    .tabs [class*=" tab"] [type="radio"]+div {
+        display: block;
+        opacity: 0;
+        padding: 2rem 0;
+        width: 90%;
+        -webkit-transition: all 0.3s ease-in-out;
+        -moz-transition: all 0.3s ease-in-out;
+        -o-transition: all 0.3s ease-in-out;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    .tabs .tab-2 {
+        width: 50%;
+    }
+    
+    .tabs .tab-2 [type="radio"]+div {
+        width: 200%;
+        margin-left: 200%;
+    }
+    
+    .tabs .tab-2 [type="radio"]:checked+div {
+        margin-left: 0;
+    }
+    
+    .tabs .tab-2:last-child [type="radio"]+div {
+        margin-left: 100%;
+    }
+    
+    .tabs .tab-2:last-child [type="radio"]:checked+div {
+        margin-left: -100%;
+    }
+</style>
+
+</html>

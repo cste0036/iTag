@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>TEST!! - Get Image</title>
+</head>
+
+<body>
+    <!--Navigation Bar at top of Screen-->
+    <div class="topnav">
+        <!--<a class="active" href="home.html">Home</a>-->
+    </div>
+
+    <a class="made-with" href="http://localhost:5500/home.html">BACK TO HOME PAGE</a>
+
+    <!--Form to Delete s3-URL-->
+    <div style="padding-left:16px">
+        <form id="url_form">
+            <div class="form">
+                <label for="s3-url">s3-URL Address:</label>
+                <input type="text" id="s3-url" placeholder="s3-url">
+            </div>
+            <div class="form">
+                <button id="btn">Get Image</button>
+            </div>
+            <div id="msg">
+                <pre></pre>
+            </div>
+        </form>
+    </div>
+
+    <!-- JSON Response message -->
+    <div class="message">
+        <img id="imgElem"></img>
+    </div>
+
+</body>
+<script>
+    // redirect to login page if unauthenticated 
+    if ((!sessionStorage.getItem("idToken")) || (sessionStorage.getItem("idToken") == "undefined")) {
+        location.href = "http://localhost:5500/sign-up.html";
+        alert("Please login or sign up to proceed further");
+    }
+    idToken = sessionStorage.getItem("idToken");
+
+    const addData = (event) => {
+
+        // Storage array for Form Data
+        var url = [];
+
+        event.preventDefault();
+
+        // Let the form data be stored
+        let data = {
+            s3_url: document.getElementById('s3-url').value
+        }
+
+        // Add the json data to the url array and reset the form
+        url.push(data);
+        document.forms[0].reset();
+
+        const data_json = {
+            s3_url: url
+        };
+
+        submitAPI(data);
+
+        //for display purposes only
+        console.warn('added', {
+            url
+        });
+        let pre = document.querySelector('#msg pre');
+        pre.textContent = '\n' + JSON.stringify(url, '\t', 2);
+
+        //saving to localStorage
+        //localStorage.setItem('urls', url_object);
+
+    }
+
+    function submitAPI(data) {
+
+        console.log(data)
+
+        try {
+            fetch("https://xvf2j57a8c.execute-api.us-east-1.amazonaws.com/prod/api/get-image", {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": idToken
+                    },
+                    body: JSON.stringify(data),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                    // Create Image from response
+                    //image = decode_base64(data.image)
+                    imgElem.setAttribute('src', "data:image/jpg;base64," + data.image);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btn').addEventListener('click', addData);
+    });
+
+    function decode_base64(data) {
+
+    }
+</script>
+
+
+<style>
+    .made-with {
+        background: #fd264f;
+        color: #fff;
+        display: block;
+        font-size: 20px;
+        line-height: 1em;
+        margin: 0;
+        padding: 10px 220px;
+        position: fixed;
+        top: 100px;
+        right: -200px;
+        text-align: center;
+        text-decoration: none;
+        transform: rotate(45deg);
+    }
+    /* Add a black background color to the top navigation */
+    
+    .topnav {
+        background-color: #333;
+        overflow: hidden;
+    }
+    /* Style the links inside the navigation bar */
+    
+    .topnav a {
+        float: left;
+        color: #f2f2f2;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+        font-size: 17px;
+    }
+    /* Change the color of links on hover */
+    
+    .topnav a:hover {
+        background-color: #ddd;
+        color: black;
+    }
+    /* Add a color to the active/current link */
+    
+    .topnav a.active {
+        background-color: #04AA6D;
+        color: white;
+    }
+    
+    .message {
+        margin-left: auto;
+        margin-right: auto;
+        width: 400px;
+        border: 1px solid #D8D8D8;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: Arial;
+        font-size: 11px;
+        text-transform: uppercase;
+        background-color: rgb(236, 255, 216);
+        color: green;
+        text-align: center;
+        margin-top: 30px;
+        align-items: center;
+    }
+    
+    form {
+        /* Center the form on the page */
+        margin: 0 auto;
+        width: 600px;
+        /* Form outline */
+        padding: 0.5rem 2rem;
+        border: 1px solid #CCC;
+        border-radius: 1em;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    form li+li {
+        margin-top: 1em;
+    }
+    
+    label {
+        /* Uniform size & alignment */
+        display: inline-block;
+        width: 200px;
+        text-align: left;
+    }
+    
+    input,
+    textarea {
+        /* To make sure that all text fields have the same font settings
+     By default, textareas have a monospace font */
+        font: 1em sans-serif;
+        /* Uniform text field size */
+        width: 550px;
+        box-sizing: border-box;
+        /* Match form field borders */
+        border: 1px solid #999;
+    }
+    
+    input:focus,
+    textarea:focus {
+        /* Additional highlight for focused elements */
+        border-color: #000;
+    }
+    
+    textarea {
+        /* Align multiline text fields with their labels */
+        vertical-align: top;
+        /* Provide space to type some text */
+        height: 5em;
+    }
+    
+    .button {
+        /* Align buttons with the text fields */
+        padding-left: 90px;
+        /* same size as the label elements */
+    }
+</style>
+
+</html>

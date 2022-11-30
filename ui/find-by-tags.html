@@ -1,0 +1,422 @@
+<!-- credit to: https://codepen.io/MilanMilosev/details/JdgRpB -->
+<!DOCTYPE html> 
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <title>Find By Tags</title> 
+        <!-- <link rel="stylesheet" href="style.css"> -->
+    </head>
+
+    <body>
+        <a class="made-with" href="http://localhost:5500/home.html">BACK TO HOME PAGE</a>
+
+        <h1>Find images based on the tags</h1>
+
+        <div class="container">
+            <pre id="json-out">Output of the JSON response will be here</pre>
+        </div>
+
+        <p id="instructions">Click on the icon to bring up the input box. Type the input and either hit enter or press the add button to add to the list of tags to be searched.<br>
+            to finalise your list and submit, press the submit button and wait for the response.</p>
+
+        <p>Available tags: </p>
+        <div id="tags"></div>
+
+        <form id="content">
+            <input type="text" name="text" id="search-input">
+            <button type="reset" class="search" id="search-btn"></button>
+            <!-- <button type="text" name="Add" class="input" id="add-input">Add</button> -->
+            <button onclick="pushData(); return false;">Add</button>
+            <button type="text" id = "submit-btn" onclick="submitAPI(); return false;">Submit</button>
+            <p id="pText">**empty**</p>
+            
+        </form>
+
+        <div id="image-out"></div>
+
+    </body>
+
+    <script>
+        // redirect to login page if unauthenticated 
+        if((!sessionStorage.getItem("idToken")) || (sessionStorage.getItem("idToken") == "undefined")){
+            location.href = "http://localhost:5500/sign-up.html";
+            alert("Please login or sign up to proceed further");
+        }
+        idToken = sessionStorage.getItem("idToken");
+        
+        // reference: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+        // list tags
+        fetch("https://xvf2j57a8c.execute-api.us-east-1.amazonaws.com/prod/api/list-tags", {
+                method: 'GET',
+                headers: {
+                    "Authorization": idToken
+                },
+            })
+            .then(response => response.json())
+            .then(
+                data => {
+                    console.log(data)
+                    var tagsDiv = document.getElementById("tags");
+                    tagsDiv.innerText = "";
+                    data.tags.forEach(element => {
+                        tagsDiv.innerText += " " + element;
+                    })
+                }
+            );
+
+        // updated 2019
+        const input = document.getElementById("search-input");
+        const searchBtn = document.getElementById("search-btn");
+
+        const expand = () => {
+        searchBtn.classList.toggle("close");
+        input.classList.toggle("square");
+        };
+
+        searchBtn.addEventListener("click", expand);
+
+        // create an array
+        var myArr = [];
+        var img_data = [];
+        // var img_base64 = [];
+        var elem = document.createElement("img");
+        
+        function pushData()
+        {
+            // get value from the input text
+            var inputText = document.getElementById('search-input').value;
+
+            console.log(inputText);
+            console.log(myArr.includes(inputText));
+
+            // quick check that value isn't already in array
+            if (myArr.includes(inputText) || inputText.length < 1){
+                // reset text in input box
+                document.getElementById("search-input").value= "";
+                // no need to add duplicate to table
+                return false;
+            }
+            
+
+            // append data to the array
+            myArr.push(inputText);
+            console.log(myArr);
+            
+            var pval = "";
+            
+            for(i = 0; i < myArr.length; i++)
+            {
+                pval = pval + myArr[i] + "<br/>";
+            }
+            
+            // display array data
+            document.getElementById('pText').innerHTML = pval;
+            // reset text in input box
+            document.getElementById("search-input").value= "";
+
+            const test = { tags: myArr };
+            console.log(JSON.stringify(test));
+            
+        }
+
+        async function submitAPI(){
+            // API expecting JSON body with 'tags' data
+            const tag_data = { tags: myArr };
+            img_data = [];
+
+            // reset images on html page after submit
+            const temp_elem = document.getElementById("image-out");
+            temp_elem.innerHTML = '';
+
+            try{
+            await fetch("https://xvf2j57a8c.execute-api.us-east-1.amazonaws.com/prod/api/query-tags", {
+                method: 'POST',
+                headers: {
+                    "Content-Type": 'application/json',
+                    "Authorization": idToken
+                },
+                body: JSON.stringify(tag_data),
+            })
+            .then(response => response.json())
+            .then(response_data => {
+                console.log('Success:', response_data);
+                img_data = response_data['links'];
+                console.log(img_data);
+                document.getElementById("json-out").textContent = JSON.stringify(response_data, undefined, 4);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+            } 
+            catch(err){
+                console.log(err);
+            }
+
+            console.log('step 1');
+            console.log(img_data);
+
+            if (img_data.length <= 0){
+                console.log('step 1-if statement');
+                return false;
+            }
+
+            console.log('step 2');
+
+            for (let i = 0; i < img_data.length; i++){
+                console.log('step 2 ' + i);
+                // put into required format
+                var url_data = { s3_url: img_data[i] };
+                // POST to get image
+                getImageAPI(url_data);
+                // elem.setAttribute('src', "data:image/jpg;base64," + image_base64.image);
+                // document.getElementById("image-out").appendChild(elem);
+            }
+            console.log(img_data);
+        }
+
+        function getImageAPI(data) {
+
+            console.log(data)
+
+            try {
+                fetch("https://xvf2j57a8c.execute-api.us-east-1.amazonaws.com/prod/api/get-image", {
+                        method: 'POST',
+                        headers: {
+                            "Authorization": idToken
+                        },
+                        body: JSON.stringify(data),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Get Image Success:', data);
+                        // Create Image from response
+                        //image = decode_base64(data.image)
+                        var elem = document.createElement("img");
+                        elem.setAttribute('src', "data:image/jpg;base64," + data.image);
+                        document.getElementById("image-out").appendChild(elem);
+
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+            } catch (err) {
+                console.log(err);
+            }
+        }
+    </script>
+
+    <style>
+        .made-with {
+            background: #fd264f;
+            color: #fff;
+            display: block;
+            font-size: 20px;
+            line-height: 1em;
+            margin: 0;
+            padding: 10px 220px;
+            position: fixed;
+            top: 100px;
+            right: -200px;
+            text-align: center;
+            text-decoration: none;
+            transform: rotate(45deg);
+        }
+        
+        h1 {
+            text-align:center;
+        }
+        
+        body {
+        background-color: rgba(138, 209, 237, 0.5);
+        color: rgb(0, 0, 0);
+        margin: 0;
+        }
+
+        #content {
+        position: absolute;
+        height: 50px;
+        width: 300px;
+        margin-left: 170px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        }
+
+        #content.on {
+        -webkit-animation-name: in-out;
+        animation-name: in-out;
+        -webkit-animation-duration: 0.7s;
+        animation-duration: 0.7s;
+        -webkit-animation-timing-function: linear;
+        animation-timing-function: linear;
+        -webkit-animation-iteration-count: 1;
+        animation-iteration-count: 1;
+        }
+
+        input {
+        box-sizing: border-box;
+        width: 50px;
+        height: 50px;
+        border: 4px solid #ffffff;
+        border-radius: 50%;
+        background: none;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 400;
+        font-family: Roboto;
+        outline: 0;
+        -webkit-transition: width 0.4s ease-in-out, border-radius 0.8s ease-in-out,
+            padding 0.2s;
+        transition: width 0.4s ease-in-out, border-radius 0.8s ease-in-out,
+            padding 0.2s;
+        -webkit-transition-delay: 0.4s;
+        transition-delay: 0.4s;
+        -webkit-transform: translate(-100%, -50%);
+        -ms-transform: translate(-100%, -50%);
+        transform: translate(-100%, -50%);
+        }
+
+        .search {
+        background: none;
+        position: absolute;
+        top: 0px;
+        left: 0;
+        height: 50px;
+        width: 50px;
+        padding: 0;
+        border-radius: 100%;
+        outline: 0;
+        border: 0;
+        color: inherit;
+        cursor: pointer;
+        -webkit-transition: 0.2s ease-in-out;
+        transition: 0.2s ease-in-out;
+        -webkit-transform: translate(-100%, -50%);
+        -ms-transform: translate(-100%, -50%);
+        transform: translate(-100%, -50%);
+        }
+
+        .search:before {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 4px;
+        background-color: #fff;
+        -webkit-transform: rotate(45deg);
+        -ms-transform: rotate(45deg);
+        transform: rotate(45deg);
+        margin-top: 26px;
+        margin-left: 17px;
+        -webkit-transition: 0.2s ease-in-out;
+        transition: 0.2s ease-in-out;
+        }
+
+        .close {
+        -webkit-transition: 0.4s ease-in-out;
+        transition: 0.4s ease-in-out;
+        -webkit-transition-delay: 0.4s;
+        transition-delay: 0.4s;
+        }
+
+        .close:before {
+        content: "";
+        position: absolute;
+        width: 27px;
+        height: 4px;
+        margin-top: -1px;
+        margin-left: -13px;
+        background-color: #fff;
+        -webkit-transform: rotate(45deg);
+        -ms-transform: rotate(45deg);
+        transform: rotate(45deg);
+        -webkit-transition: 0.2s ease-in-out;
+        transition: 0.2s ease-in-out;
+        }
+
+        .close:after {
+        content: "";
+        position: absolute;
+        width: 27px;
+        height: 4px;
+        background-color: #fff;
+        margin-top: -1px;
+        margin-left: -13px;
+        cursor: pointer;
+        -webkit-transform: rotate(-45deg);
+        -ms-transform: rotate(-45deg);
+        transform: rotate(-45deg);
+        }
+
+        .square {
+        box-sizing: border-box;
+        padding: 0 40px 0 10px;
+        width: 300px;
+        height: 50px;
+        border: 4px solid #ffffff;
+        border-radius: 0;
+        background: none;
+        color: #fff;
+        font-family: Roboto;
+        font-size: 16px;
+        font-weight: 400;
+        outline: 0;
+        -webkit-transition: width 0.4s ease-in-out, border-radius 0.4s ease-in-out,
+            padding 0.2s;
+        transition: width 0.4s ease-in-out, border-radius 0.4s ease-in-out,
+            padding 0.2s;
+        -webkit-transition-delay: 0.4s, 0s, 0.4s;
+        transition-delay: 0.4s, 0s, 0.4s;
+        -webkit-transform: translate(-100%, -50%);
+        -ms-transform: translate(-100%, -50%);
+        transform: translate(-100%, -50%);
+        }
+
+        #json-out {
+            display: inline-block;
+            margin: 0 auto;
+            text-align: left;
+            font-size: large;
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+
+        .container {
+            font-family: arial;
+            font-size: 24px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 600px;
+            height: auto;
+            outline: solid 1px black;
+            position: relative;
+        }
+
+        #instructions {
+            font-family: arial;
+            font-size: 16px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 600px;
+            height: auto;
+            position: relative;
+        }
+
+
+        #image-out{
+            position: relative;
+            top: 450px;
+        }
+
+        img{
+            height: 25%;
+            width: 25%;
+            vertical-align: text-top;
+        }
+
+    </style>
+
+</html>
